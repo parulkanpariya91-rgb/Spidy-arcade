@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPIDY ARCADE - 18 Classic Red Arcade Games</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Retro Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    
+    <style>
+        .font-arcade { font-family: 'Press Start 2P', cursive; }
+        .font-crt { font-family: 'VT323', monospace; }
+        .font-spidy { font-family: 'Bangers', cursive; }
+
+        /* CRT Overlay for Classic Arcade Monitor */
+        .crt-overlay {
+            background: linear-gradient(
+                rgba(18, 4, 4, 0) 50%, 
+                rgba(0, 0, 0, 0.45) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.04),
+                rgba(100, 0, 0, 0.02),
+                rgba(180, 0, 0, 0.04)
+            );
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none !important; /* CRITICAL: Prevent overlay from blocking clicks */
+        }
+
+        .crt-overlay.disabled {
+            display: none;
+        }
+
+        @keyframes crt-flicker {
+            0% { opacity: 0.98; }
+            50% { opacity: 1; }
+            100% { opacity: 0.97; }
+        }
+
+        .crt-container {
+            animation: crt-flicker 0.15s infinite;
+        }
+
+        /* Spider Web Background Pattern */
+        .spider-web-bg {
+            background-color: #0b0101;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(185, 28, 28, 0.2) 0%, transparent 70%),
+                repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 20px, rgba(220, 38, 38, 0.05) 21px, rgba(220, 38, 38, 0.05) 22px),
+                linear-gradient(0deg, rgba(220, 38, 38, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(220, 38, 38, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+        }
+
+        /* Pure Red Glow Effects - Strictly No Neon / Cyan */
+        .spidy-red-glow-text {
+            text-shadow: 0 0 8px #ff2222, 0 0 18px #a80000, 0 0 28px #550000;
+        }
+        
+        .spidy-card-glow {
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.35), inset 0 0 12px rgba(153, 27, 27, 0.25);
+        }
+
+        .spidy-card-glow:hover {
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.8), inset 0 0 18px rgba(185, 28, 28, 0.5);
+            transform: translateY(-4px);
+        }
+
+        @keyframes pulse-marquee {
+            0%, 100% { filter: drop-shadow(0 0 14px #ff0000); opacity: 1; }
+            50% { filter: drop-shadow(0 0 4px #770000); opacity: 0.85; }
+        }
+
+        .spidy-marquee {
+            animation: pulse-marquee 1.6s infinite ease-in-out;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #180202; }
+        ::-webkit-scrollbar-thumb {
+            background: #991b1b;
+            border: 2px solid #450a0a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: #dc2626; }
+    </style>
+</head>
+<body class="spider-web-bg text-red-100 min-h-screen font-crt overflow-x-hidden selection:bg-red-800 selection:text-white">
+
+    <!-- CRT Visual Scanline Layer -->
+    <div id="crtOverlay" class="fixed inset-0 crt-overlay z-50"></div>
+
+    <!-- Main Cabinet Frame Container -->
+    <div class="crt-container min-h-screen flex flex-col justify-between border-[10px] md:border-[18px] border-[#290303] bg-[#120202] shadow-[inset_0_0_100px_rgba(0,0,0,0.95)] relative">
+        
+        <!-- TOP ARCADE CABIN HEADER / MARQUEE -->
+        <header class="border-b-4 border-red-900 bg-gradient-to-b from-[#380505] via-[#220303] to-[#120101] p-4 md:p-6 shadow-2xl relative z-10">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                
+                <!-- Left: Coins & Credits Counter -->
+                <div class="flex items-center gap-3 bg-[#1e0303] border-2 border-red-800/80 px-4 py-2 rounded-md shadow-inner">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-arcade text-red-500 uppercase tracking-widest">CREDITS</span>
+                        <span id="coinCount" class="text-xl font-arcade text-red-400 font-bold spidy-red-glow-text">99</span>
+                    </div>
+                    <button id="insertCoinBtn" class="font-arcade text-[10px] bg-red-800 hover:bg-red-600 active:bg-red-900 text-white px-3 py-2 rounded border border-red-500 shadow transition-all active:scale-95 cursor-pointer">
+                        INSERT COIN
+                    </button>
+                </div>
+
+                <!-- Center: Spidy Arcade Main Marquee Header -->
+                <div class="text-center flex flex-col items-center">
+                    <div class="inline-flex items-center gap-3 border-4 border-red-600 bg-[#2b0404] px-6 py-2.5 rounded-xl spidy-marquee shadow-[0_0_35px_rgba(220,38,38,0.5)]">
+                        <!-- Left Spider Icon -->
+                        <svg class="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2L10.5 5H13.5L12 2ZM12 6C10.5 6 9.5 7.2 9.5 8.8C9.5 10 10.2 11 11 11.5V13C9.8 12.8 8 11.5 7 9H5C6.2 12.5 8.8 14.3 11 14.8V21H13V14.8C15.2 14.3 17.8 12.5 19 9H17C16 11.5 14.2 12.8 13 13V11.5C13.8 11 14.5 10 14.5 8.8C14.5 7.2 13.5 6 12 6ZM5 4L8 7.5L6.8 8.8L3 4H5ZM19 4L16 7.5L17.2 8.8L21 4H19ZM3 18L6.8 14.8L8 16L5 20H3V18ZM21 18L17.2 14.8L16 16L19 20H21V18Z"/>
+                        </svg>
+                        
+                        <h1 class="text-3xl md:text-5xl font-spidy text-red-500 tracking-wider spidy-red-glow-text uppercase">
+                            SPIDY ARCADE
+                        </h1>
+
+                        <!-- Right Spider Icon -->
+                        <svg class="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2L10.5 5H13.5L12 2ZM12 6C10.5 6 9.5 7.2 9.5 8.8C9.5 10 10.2 11 11 11.5V13C9.8 12.8 8 11.5 7 9H5C6.2 12.5 8.8 14.3 11 14.8V21H13V14.8C15.2 14.3 17.8 12.5 19 9H17C16 11.5 14.2 12.8 13 13V11.5C13.8 11 14.5 10 14.5 8.8C14.5 7.2 13.5 6 12 6ZM5 4L8 7.5L6.8 8.8L3 4H5ZM19 4L16 7.5L17.2 8.8L21 4H19ZM3 18L6.8 14.8L8 16L5 20H3V18ZM21 18L17.2 14.8L16 16L19 20H21V18Z"/>
+                        </svg>
+                    </div>
+                    <p class="text-red-400 text-base md:text-lg font-crt mt-1.5 tracking-widest uppercase">
+                        🕸️ 18 FAMOUS WEB-SLINGING ARCADE CLASSICS 🕸️
+                    </p>
+                </div>
+
+                <!-- Right: Sound Control & CRT Toggle -->
+                <div class="flex items-center gap-3 bg-[#1e0303] border-2 border-red-800/80 px-4 py-2 rounded-md shadow-inner">
+                    <button id="crtToggleBtn" class="bg-red-950 hover:bg-red-800 border border-red-600 px-3 py-1.5 rounded text-red-300 font-arcade text-[10px] transition-colors cursor-pointer">
+                        CRT: ON
+                    </button>
+                    <button id="soundToggleBtn" class="bg-red-950 hover:bg-red-800 border border-red-600 p-2 rounded text-red-300 transition-colors cursor-pointer" title="Toggle Sound">
+                        <svg id="soundIcon" class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                        </svg>
+                    </button>
+                </div>
+
+            </div>
+        </header>
+
+        <!-- SEARCH AND FILTER BAR -->
+        <section class="max-w-7xl mx-auto w-full px-4 pt-6 pb-2 z-10">
+            <div class="flex flex-col sm:flex-row gap-4 items-center justify-between bg-[#1f0303] border-2 border-red-900/80 p-3 rounded-lg shadow-lg">
+                <div class="relative w-full sm:w-96">
+                    <input type="text" id="searchInput" placeholder="SEARCH 18 SPIDY GAMES..." 
+                           class="w-full bg-[#110101] text-red-200 placeholder-red-700/70 border border-red-800 rounded-md px-10 py-2 font-arcade text-xs focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all">
+                    <svg class="w-4 h-4 text-red-600 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <div class="flex items-center gap-2 text-red-400 font-arcade text-xs tracking-wider">
+                    <span>GAMES LOADED:</span>
+                    <span id="gameCounter" class="text-red-200 font-bold bg-red-900/40 border border-red-800 px-2 py-0.5 rounded">18/18</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN 18 GAMES GRID -->
+        <main class="max-w-7xl mx-auto w-full px-4 py-6 flex-grow z-10">
+            <div id="gamesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Cards dynamically generated here as <a href="..."> -->
+            </div>
+        </main>
+
+        <!-- FOOTER / CABINET BAR -->
+        <footer class="border-t-4 border-red-900 bg-[#110101] py-4 px-6 text-center text-red-600 font-arcade text-xs z-10">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+                <div>🕸️ SPIDY ARCADE SYSTEM • STRICT RED RETRO HUB</div>
+                <div class="animate-pulse text-red-400">CLICK ANY CARD OR 'PLAY GAME' TO LAUNCH DIRECTLY</div>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // Web Audio API Retro Sound Effects Synthesizer
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playHover() {
+                if (this.muted) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(440, this.ctx.currentTime + 0.05);
+                    gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.05);
+                } catch(e) {}
+            }
+
+            playCoin() {
+                if (this.muted) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(987.77, this.ctx.currentTime);
+                    osc.frequency.setValueAtTime(1318.51, this.ctx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.09, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.28);
+                } catch(e) {}
+            }
+
+            playLaunch() {
+                if (this.muted) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.15);
+                } catch(e) {}
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        // Exactly 18 Famous Games Data Array
+        const gamesList = [
+            {
+                id: 'ludo',
+                title: 'LUDO KING',
+                category: 'BOARD CLASSIC',
+                desc: 'Roll the dice, race tokens home, and reign supreme on the board.',
+                url: 'https://ludoking.com',
+                badge: 'MULTIPLAYER',
+                svg: `<path d="M4 4h16v16H4V4zm2 2v5h5V6H6zm7 0v5h5V6h-5zm-7 7v5h5v-5H6zm7 0v5h5v-5h-5z" fill="currentColor"/>`
+            },
+            {
+                id: 'pacman',
+                title: 'PAC-MAN',
+                category: 'ARCADE MAZE',
+                desc: 'Chomp dots and dodge ghosts in the famous Google 30th Anniversary Doodle.',
+                url: 'https://www.google.com/doodles/30th-anniversary-of-pac-man',
+                badge: 'GOOGLE GAME',
+                svg: `<path d="M12 2A10 10 0 1022 12a10 10 0 00-2-6.32L12 12V2z" fill="currentColor"/><circle cx="12" cy="6" r="1.5" fill="#110101"/>`
+            },
+            {
+                id: 'snake',
+                title: 'GOOGLE SNAKE',
+                category: 'RETRO CLASSIC',
+                desc: 'Gulp red apples, expand your tail, and avoid walls in Google Snake.',
+                url: 'https://www.google.com/search?q=play+snake',
+                badge: 'GOOGLE GAME',
+                svg: `<path d="M3 3h4v4H3V3zm4 4h4v4H7V7zm4 0h4v4h-4V7zm4 4h4v4h-4v-4zm-4 4h4v4h-4v-4zm-4 0h4v4H7v-4z" fill="currentColor"/>`
+            },
+            {
+                id: 'tictactoe',
+                title: 'TIC TAC TOE',
+                category: 'STRATEGY',
+                desc: 'Align 3 Xs or Os horizontally, vertically, or diagonally to win.',
+                url: 'https://www.google.com/search?q=play+tic+tac+toe',
+                badge: 'GOOGLE GAME',
+                svg: `<path d="M10 3v6H3v2h7v6H3v2h7v3h2v-3h6v3h2v-3h3v-2h-3v-6h3V9h-3V3h-2v6h-6V3h-2zm2 8h6v6h-6v-6z" fill="currentColor"/>`
+            },
+            {
+                id: 'solitaire',
+                title: 'SOLITAIRE',
+                category: 'CARD CLASSIC',
+                desc: 'Stack cards in sequence and alternating suits in solo card play.',
+                url: 'https://www.google.com/search?q=play+solitaire',
+                badge: 'GOOGLE GAME',
+                svg: `<path d="M12 2L4 9l8 13 8-13-8-7zm0 4.5l4.5 4L12 16.5 7.5 10.5 12 6.5z" fill="currentColor"/>`
+            },
+            {
+                id: 'minesweeper',
+                title: 'MINESWEEPER',
+                category: 'PUZZLE LOGIC',
+                desc: 'Uncover safe tiles using grid numbers without triggering mines.',
+                url: 'https://www.google.com/search?q=play+minesweeper',
+                badge: 'GOOGLE GAME',
+                svg: `<path d="M11 2h2v3h-2V2zm0 17h2v3h-2v-3zM2 11h3v2H2v-2zm17 0h3v2h-3v-2zM12 7a5 5 0 100 10 5 5 0 000-10z" fill="currentColor"/>`
+            },
+            {
+                id: 'breakout',
+                title: 'ATARI BREAKOUT',
+                category: 'ARCADE ACTION',
+                desc: 'Bounce ball off paddle and smash through colorful brick layers.',
+                url: 'https://elgoog.im/breakout/',
+                badge: 'CLASSIC',
+                svg: `<path d="M2 4h20v3H2V4zm0 5h20v3H2V9zm6 11h8v2H8v-2zm4-6a2 2 0 100-4 2 2 0 000 4z" fill="currentColor"/>`
+            },
+            {
+                id: 'spaceinvaders',
+                title: 'SPACE INVADERS',
+                category: 'RETRO SHOOTER',
+                desc: 'Defend Earth against alien invaders in this classic arcade shooter.',
+                url: 'https://freeinvaders.org',
+                badge: 'CLASSIC',
+                svg: `<path d="M6 3h12v3H6V3zm-2 5h16v3H4V8zm-2 5h20v3H2v-3zm4 5h3v3H6v-3zm9 0h3v3h-3v-3z" fill="currentColor"/>`
+            },
+            {
+                id: 'tetris',
+                title: 'TETRIS',
+                category: 'PUZZLE ACTION',
+                desc: 'Rotate falling tetriminos to clear lines in official Tetris.',
+                url: 'https://tetris.com/play-tetris',
+                badge: 'TOP HIT',
+                svg: `<path d="M8 2h8v4H8V2zm-6 6h12v4H2V8zm12 0h8v4h-8V8zm-6 6h8v8h-8v-8z" fill="currentColor"/>`
+            },
+            {
+                id: 'chess',
+                title: 'CHESS.COM',
+                category: 'BOARD STRATEGY',
+                desc: 'Test your tactical brilliance on the world\'s premiere chess platform.',
+                url: 'https://www.chess.com',
+                badge: 'MULTIPLAYER',
+                svg: `<path d="M9 3h6v2H9V3zm1 3h4v3h-4V6zm-3 4h10v3H7v-3zm-1 4h12v3H6v-3zm-2 4h16v3H4v-3z" fill="currentColor"/>`
+            },
+            {
+                id: 'checkers',
+                title: 'CHECKERS',
+                category: 'BOARD CLASSIC',
+                desc: 'Jump enemy pieces, command diagonals, and crown your kings.',
+                url: 'https://www.247checkers.com',
+                badge: 'CLASSIC',
+                svg: `<circle cx="7" cy="7" r="4" fill="currentColor"/><circle cx="17" cy="7" r="4" fill="currentColor"/><circle cx="12" cy="17" r="4" fill="currentColor"/>`
+            },
+            {
+                id: 'dino',
+                title: 'CHROME DINO',
+                category: 'ENDLESS RUNNER',
+                desc: 'Leap cacti and duck under pterodactyls in the famous dino runner.',
+                url: 'https://chromedino.com',
+                badge: 'RUNNER',
+                svg: `<path d="M13 2h7v6h-2v2h-2V6h-3V2zm-4 8h3v4H9v-4zm-4 4h4v4H5v-4zm0 4h2v4H5v-4zm6 0h2v4h-2v-4z" fill="currentColor"/>`
+            },
+            {
+                id: 'memory',
+                title: 'GOOGLE MEMORY',
+                category: 'BRAIN PUZZLE',
+                desc: 'Test your recall by matching cute musical animal cards.',
+                url: 'https://www.google.com/search?q=google+memory+game',
+                badge: 'GOOGLE GAME',
+                svg: `<path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z" fill="currentColor"/>`
+            },
+            {
+                id: 'quickdraw',
+                title: 'QUICK, DRAW!',
+                category: 'AI DOODLE',
+                desc: 'Can a neural network recognize your drawings in 20 seconds?',
+                url: 'https://quickdraw.withgoogle.com/',
+                badge: 'GOOGLE AI',
+                svg: `<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>`
+            },
+            {
+                id: '2048',
+                title: '2048 GAME',
+                category: 'NUMBER PUZZLE',
+                desc: 'Slide and merge identical numbers to reach the legendary 2048 tile.',
+                url: 'https://play2048.co/',
+                badge: 'PUZZLE',
+                svg: `<path d="M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zm2 4v3h4V7H7zm6 0v3h4V7h-4zm-6 6v3h4v-3H7zm6 0v3h4v-3h-4z" fill="currentColor"/>`
+            },
+            {
+                id: 'santatracker',
+                title: 'SANTA TRACKER',
+                category: 'ARCADE HUB',
+                desc: 'Explore Google\'s collection of fun holiday arcade mini-games.',
+                url: 'https://santatracker.google.com/',
+                badge: 'GOOGLE HUB',
+                svg: `<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>`
+            },
+            {
+                id: 'slither',
+                title: 'SLITHER.IO',
+                category: 'SNAKE MULTIPLAYER',
+                desc: 'Slither among thousands of players, eat glowing orbs, grow huge.',
+                url: 'https://slither.io/',
+                badge: 'MULTIPLAYER',
+                svg: `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>`
+            },
+            {
+                id: 'subwaysurfers',
+                title: 'SUBWAY SURFERS',
+                category: 'RUNNER ACTION',
+                desc: 'Dodge trains, surf barrier tracks, and escape the inspector online.',
+                url: 'https://subwaysurfers.com/',
+                badge: 'ACTION RUNNER',
+                svg: `<path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM19 17H5v-4h14v4z" fill="currentColor"/>`
+            }
+        ];
+
+        const gamesGrid = document.getElementById('gamesGrid');
+        const searchInput = document.getElementById('searchInput');
+        const gameCounter = document.getElementById('gameCounter');
+
+        function renderGames(games) {
+            gamesGrid.innerHTML = '';
+            gameCounter.textContent = `${games.length}/18`;
+            
+            if (games.length === 0) {
+                gamesGrid.innerHTML = `
+                    <div class="col-span-full text-center py-16 text-red-500 font-arcade">
+                        NO SPIDY GAMES FOUND MATCHING QUERY
+                    </div>
+                `;
+                return;
+            }
+
+            games.forEach(game => {
+                // Card rendered as a direct standard HTML anchor tag for native browser link opening
+                const card = document.createElement('a');
+                card.href = game.url;
+                card.target = '_blank';
+                card.rel = 'noopener noreferrer';
+                card.className = `group bg-gradient-to-b from-[#2a0404] via-[#1a0202] to-[#100101] border-2 border-red-900/90 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 spidy-card-glow relative overflow-hidden block select-none decoration-none text-red-100`;
+                
+                card.innerHTML = `
+                    <!-- Corner Spider Web Accent -->
+                    <div class="absolute top-0 right-0 w-12 h-12 pointer-events-none opacity-20 group-hover:opacity-60 transition-opacity">
+                        <svg viewBox="0 0 100 100" class="text-red-500 fill-current">
+                            <path d="M0,0 L100,0 L100,100 Z M20,0 L100,80 M40,0 L100,60 M60,0 L100,40 M80,0 L100,20" stroke="currentColor" stroke-width="3" fill="none"/>
+                        </svg>
+                    </div>
+
+                    <!-- Top Badge Row -->
+                    <div class="flex justify-between items-center mb-3 pointer-events-none">
+                        <span class="text-[9px] font-arcade bg-red-950 text-red-400 border border-red-800/80 px-2 py-1 rounded shadow">
+                            ${game.category}
+                        </span>
+                        <span class="text-[9px] font-arcade text-red-300 bg-red-900/40 px-2 py-0.5 rounded border border-red-800">
+                            ${game.badge}
+                        </span>
+                    </div>
+
+                    <!-- Icon Graphic -->
+                    <div class="my-3 flex justify-center items-center pointer-events-none">
+                        <div class="w-16 h-16 rounded-xl bg-[#330404] border-2 border-red-700/80 flex items-center justify-center text-red-400 group-hover:text-red-100 group-hover:border-red-500 group-hover:scale-110 transition-all duration-300 shadow-[inset_0_0_15px_rgba(220,38,38,0.4)]">
+                            <svg class="w-10 h-10" viewBox="0 0 24 24">
+                                ${game.svg}
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Game Info -->
+                    <div class="text-center mt-2 mb-4 flex-grow pointer-events-none">
+                        <h3 class="text-base font-arcade text-red-300 group-hover:text-white transition-colors tracking-wide spidy-red-glow-text mb-2">
+                            ${game.title}
+                        </h3>
+                        <p class="text-xs text-red-400/80 font-crt line-clamp-2 leading-relaxed">
+                            ${game.desc}
+                        </p>
+                    </div>
+
+                    <!-- Direct Clickable Play Button Anchor Area -->
+                    <div class="pt-2 pointer-events-none">
+                        <div class="play-btn w-full bg-red-900/60 group-hover:bg-red-700 text-red-200 group-hover:text-white border border-red-600 font-arcade text-xs py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all duration-300 shadow-md">
+                            <span>PLAY GAME</span>
+                            <svg class="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+
+                // Sound triggers on hover and click
+                card.addEventListener('mouseenter', () => sfx.playHover());
+                card.addEventListener('click', () => sfx.playLaunch());
+
+                gamesGrid.appendChild(card);
+            });
+        }
+
+        // Initial Render
+        renderGames(gamesList);
+
+        // Realtime Search Filter
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const filtered = gamesList.filter(game => 
+                game.title.toLowerCase().includes(query) || 
+                game.category.toLowerCase().includes(query) ||
+                game.desc.toLowerCase().includes(query)
+            );
+            renderGames(filtered);
+        });
+
+        // Insert Coin Counter
+        const insertCoinBtn = document.getElementById('insertCoinBtn');
+        const coinCountDisplay = document.getElementById('coinCount');
+        let currentCoins = 99;
+
+        insertCoinBtn.addEventListener('click', () => {
+            sfx.playCoin();
+            currentCoins++;
+            coinCountDisplay.textContent = currentCoins;
+            coinCountDisplay.classList.add('text-white');
+            setTimeout(() => coinCountDisplay.classList.remove('text-white'), 200);
+        });
+
+        // Sound Mute Toggle
+        const soundToggleBtn = document.getElementById('soundToggleBtn');
+        const soundIcon = document.getElementById('soundIcon');
+
+        soundToggleBtn.addEventListener('click', () => {
+            sfx.muted = !sfx.muted;
+            if (sfx.muted) {
+                soundIcon.classList.add('opacity-40');
+                soundToggleBtn.classList.add('bg-red-900');
+            } else {
+                soundIcon.classList.remove('opacity-40');
+                soundToggleBtn.classList.remove('bg-red-900');
+                sfx.playCoin();
+            }
+        });
+
+        // CRT Scanlines Toggle Switch
+        const crtToggleBtn = document.getElementById('crtToggleBtn');
+        const crtOverlay = document.getElementById('crtOverlay');
+        let crtEnabled = true;
+
+        crtToggleBtn.addEventListener('click', () => {
+            sfx.playCoin();
+            crtEnabled = !crtEnabled;
+            if (crtEnabled) {
+                crtOverlay.classList.remove('disabled');
+                crtToggleBtn.textContent = 'CRT: ON';
+                crtToggleBtn.classList.remove('bg-red-900');
+            } else {
+                crtOverlay.classList.add('disabled');
+                crtToggleBtn.textContent = 'CRT: OFF';
+                crtToggleBtn.classList.add('bg-red-900');
+            }
+        });
+    </script>
+</body>
+</html>
